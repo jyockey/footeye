@@ -1,5 +1,6 @@
-import numpy as np
 import cv2 as cv
+
+
 cap = cv.VideoCapture('c:\\proj\\footeye\\highlight_vid.mp4')
 while cap.isOpened():
     ret, frame = cap.read()
