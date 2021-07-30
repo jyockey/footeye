@@ -1,7 +1,6 @@
 # import the necessary packages
 from imutils.video import FPS
 import argparse
-import imutils
 import cv2
 
 
@@ -36,7 +35,6 @@ while vs.isOpened():
     if not ret:
         break
 
-    frame = imutils.resize(frame, width=500)
     (H, W) = frame.shape[:2]
 
     # check to see if we are currently tracking an object
