@@ -20,17 +20,31 @@ def mask_green(frame):
 
 def mask_white(frame):
     grayImage = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
-    _, frame = cv.threshold(grayImage, 180, 255, cv.THRESH_BINARY)
+    _, frame = cv.threshold(grayImage, 185, 255, cv.THRESH_BINARY)
     return frame
 
 
-def find_pitch(frame):
+def pitch_mask(frame):
     blurred = cv.medianBlur(frame, 5)
     mask = mask_green(blurred)
     kernel = np.ones((5, 5), np.uint8)
     mask = cv.morphologyEx(mask, cv.MORPH_OPEN, kernel, iterations=5)
     mask = cv.morphologyEx(mask, cv.MORPH_CLOSE, kernel, iterations=1)
-    return cv.bitwise_and(frame, frame, mask=mask)
+    return mask
+
+
+def on_field_mask(pitchMask):
+    contours, hierarchy = cv.findContours(
+            pitchMask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+    largestContour = max(contours, key=cv.contourArea)
+    hull = cv.convexHull(largestContour)
+    blank = np.zeros(frame.shape[0:2], dtype="uint8")
+    return cv.drawContours(
+            blank, [hull], -1, (255, 255, 255), -1)
+
+
+def mask_to_field(frame):
+    return cv.bitwise_and(frame, frame, mask=on_field_mask(pitch_mask(frame)))
 
 
 def find_lines(frame):
@@ -52,13 +66,19 @@ def find_lines(frame):
 
 
 def interactive_find_pitch(frame):
-    blurred = cv.medianBlur(frame, 5)
+    blurred = cv.medianBlur(frame, 3)
     mask = mask_green(blurred)
     kernel = np.ones((5, 5), np.uint8)
     morphed = cv.morphologyEx(mask, cv.MORPH_OPEN, kernel, iterations=5)
     morphed = cv.morphologyEx(morphed, cv.MORPH_CLOSE, kernel, iterations=1)
-    masked = cv.bitwise_and(frame, frame, mask=morphed)
-    all_frames = [frame, blurred, mask, morphed, masked]
+    contours, hierarchy = cv.findContours(
+            morphed, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+    largestContour = max(contours, key=cv.contourArea)
+    blank = np.zeros((frame.shape[0], frame.shape[1]), dtype="uint8")
+    contour_mask = cv.drawContours(
+            blank, [largestContour], -1, (255, 255, 255), -1)
+    masked = cv.bitwise_and(frame, frame, mask=contour_mask)
+    all_frames = [frame, blurred, mask, morphed, contour_mask, masked]
     idx = 0
     while (idx < len(all_frames)):
         cv.imshow('frame', all_frames[idx])
@@ -67,12 +87,27 @@ def interactive_find_pitch(frame):
             idx = idx - 1
         else:
             idx = idx + 1
-    cv.destroyAllWindows()
+    return masked
 
 
 # 350 450 950
-frame = extract_frame('c:\\proj\\footeye\\full_vid.mp4', 950)
-frame = find_pitch(frame)
-edges = find_lines(frame)
-cv.imshow('frame', edges)
-cv.waitKey(0)
+#frame = extract_frame('c:\\proj\\footeye\\full_vid.mp4', 950)
+#frame = interactive_find_pitch(frame)
+#edges = find_lines(frame)
+#cv.imshow('frame', edges)
+#cv.waitKey(0)
+
+vid = cv.VideoCapture('c:\\proj\\footeye\\highlight_vid.mp4')
+while vid.isOpened():
+    ret, frame = vid.read()
+    # if frame is read correctly ret is True
+    if not ret:
+        print("Can't receive frame (stream end?). Exiting ...")
+        break
+    cv.imshow('frame', mask_to_field(frame))
+    if cv.waitKey(1) == ord('q'):
+        break
+# When everything done, release the capture
+vid.release()
+
+#cv.destroyAllWindows()
