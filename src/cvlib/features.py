@@ -28,7 +28,7 @@ def pitch_mask(frame):
     blurred = cv.medianBlur(frame, 5)
     mask = mask_green(blurred)
     kernel = np.ones((5, 5), np.uint8)
-    mask = cv.morphologyEx(mask, cv.MORPH_OPEN, kernel, iterations=5)
+    mask = cv.morphologyEx(mask, cv.MORPH_OPEN, kernel, iterations=3)
     mask = cv.morphologyEx(mask, cv.MORPH_CLOSE, kernel, iterations=1)
     return mask
 
@@ -45,6 +45,14 @@ def on_field_mask(pitchMask):
 
 def mask_to_field(frame):
     return cv.bitwise_and(frame, frame, mask=on_field_mask(pitch_mask(frame)))
+
+
+def extract_players(frame):
+    pitchMask = pitch_mask(frame)
+    frame = cv.bitwise_and(frame, frame, mask=on_field_mask(pitchMask))
+    reversedMask = cv.bitwise_not(pitchMask)
+    players = cv.bitwise_and(frame, frame, mask=reversedMask)
+    return players
 
 
 def find_lines(frame):
@@ -104,7 +112,7 @@ while vid.isOpened():
     if not ret:
         print("Can't receive frame (stream end?). Exiting ...")
         break
-    cv.imshow('frame', mask_to_field(frame))
+    cv.imshow('frame', extract_players(frame))
     if cv.waitKey(1) == ord('q'):
         break
 # When everything done, release the capture
