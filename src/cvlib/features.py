@@ -1,21 +1,14 @@
 import cv2 as cv
 import numpy as np
 
+import frameutils
+
 lower_green = np.array([30, 20, 20])
 upper_green = np.array([90, 180, 220])
 
 
-def extract_frame(file, frame_idx):
-    vid = cv.VideoCapture(file)
-    vid.set(cv.CAP_PROP_POS_FRAMES, frame_idx)
-    ret, frame = vid.read()
-    vid.release()
-    return frame
-
-
 def mask_green(frame):
-    hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
-    return cv.inRange(hsv, lower_green, upper_green)
+    return frameutils.mask_color_range(frame, lower_green, upper_green)
 
 
 def mask_white(frame):
@@ -38,7 +31,7 @@ def on_field_mask(pitchMask):
             pitchMask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
     largestContour = max(contours, key=cv.contourArea)
     hull = cv.convexHull(largestContour)
-    blank = np.zeros(frame.shape[0:2], dtype="uint8")
+    blank = np.zeros(pitchMask.shape[0:2], dtype="uint8")
     return cv.drawContours(
             blank, [hull], -1, (255, 255, 255), -1)
 
@@ -96,26 +89,3 @@ def interactive_find_pitch(frame):
         else:
             idx = idx + 1
     return masked
-
-
-# 350 450 950
-#frame = extract_frame('c:\\proj\\footeye\\full_vid.mp4', 950)
-#frame = interactive_find_pitch(frame)
-#edges = find_lines(frame)
-#cv.imshow('frame', edges)
-#cv.waitKey(0)
-
-vid = cv.VideoCapture('c:\\proj\\footeye\\highlight_vid.mp4')
-while vid.isOpened():
-    ret, frame = vid.read()
-    # if frame is read correctly ret is True
-    if not ret:
-        print("Can't receive frame (stream end?). Exiting ...")
-        break
-    cv.imshow('frame', extract_players(frame))
-    if cv.waitKey(1) == ord('q'):
-        break
-# When everything done, release the capture
-vid.release()
-
-#cv.destroyAllWindows()
