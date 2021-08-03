@@ -1,10 +1,29 @@
 import cv2 as cv
 import numpy as np
 
-import frameutils
+import footeye.cvlib.frameutils as frameutils
 
 lower_green = np.array([30, 20, 20])
 upper_green = np.array([90, 180, 220])
+
+logframes = None
+
+
+def enable_logging():
+    global logframes
+    logframes = []
+
+
+def log_frame(frame, desc):
+    global logframes
+    if logframes is not None:
+        if (len(frame.shape) < 3):
+            copy = cv.cvtColor(frame, cv.COLOR_GRAY2BGR)
+        else:
+            copy = frame.copy()
+        cv.putText(copy, desc, (20, 20), cv.FONT_HERSHEY_SIMPLEX, 0.6,
+                   (0, 0, 255), 2)
+        logframes.append(copy)
 
 
 def mask_green(frame):
@@ -18,11 +37,15 @@ def mask_white(frame):
 
 
 def pitch_mask(frame):
-    blurred = cv.medianBlur(frame, 5)
-    mask = mask_green(blurred)
+    frame = cv.medianBlur(frame, 5)
+    log_frame(frame, "Blurred")
+    mask = mask_green(frame)
+    log_frame(mask, "Green Mask")
     kernel = np.ones((5, 5), np.uint8)
     mask = cv.morphologyEx(mask, cv.MORPH_OPEN, kernel, iterations=3)
+    log_frame(mask, "Morphed 1")
     mask = cv.morphologyEx(mask, cv.MORPH_CLOSE, kernel, iterations=1)
+    log_frame(mask, "Morphed 2")
     return mask
 
 
@@ -37,14 +60,20 @@ def on_field_mask(pitchMask):
 
 
 def mask_to_field(frame):
-    return cv.bitwise_and(frame, frame, mask=on_field_mask(pitch_mask(frame)))
+    fieldMask = on_field_mask(pitch_mask(frame))
+    log_frame(fieldMask, "Field Mask")
+    return cv.bitwise_and(frame, frame, mask=fieldMask)
 
 
 def extract_players(frame):
     pitchMask = pitch_mask(frame)
-    frame = cv.bitwise_and(frame, frame, mask=on_field_mask(pitchMask))
-    reversedMask = cv.bitwise_not(pitchMask)
-    players = cv.bitwise_and(frame, frame, mask=reversedMask)
+    onFieldMask = on_field_mask(pitchMask)
+    field = cv.bitwise_and(frame, frame, mask=onFieldMask)
+    log_frame(field, "Field")
+    notPitchMask = cv.bitwise_not(pitchMask)
+    log_frame(notPitchMask, "Not pitch mask")
+    players = cv.bitwise_and(field, field, mask=notPitchMask)
+    log_frame(players, "Players")
     return players
 
 
@@ -64,28 +93,3 @@ def find_lines(frame):
     cv.imshow('frame', frame)
     cv.waitKey(0)
     return frame
-
-
-def interactive_find_pitch(frame):
-    blurred = cv.medianBlur(frame, 3)
-    mask = mask_green(blurred)
-    kernel = np.ones((5, 5), np.uint8)
-    morphed = cv.morphologyEx(mask, cv.MORPH_OPEN, kernel, iterations=5)
-    morphed = cv.morphologyEx(morphed, cv.MORPH_CLOSE, kernel, iterations=1)
-    contours, hierarchy = cv.findContours(
-            morphed, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
-    largestContour = max(contours, key=cv.contourArea)
-    blank = np.zeros((frame.shape[0], frame.shape[1]), dtype="uint8")
-    contour_mask = cv.drawContours(
-            blank, [largestContour], -1, (255, 255, 255), -1)
-    masked = cv.bitwise_and(frame, frame, mask=contour_mask)
-    all_frames = [frame, blurred, mask, morphed, contour_mask, masked]
-    idx = 0
-    while (idx < len(all_frames)):
-        cv.imshow('frame', all_frames[idx])
-        key = cv.waitKeyEx(0)
-        if key == 2424832:
-            idx = idx - 1
-        else:
-            idx = idx + 1
-    return masked
