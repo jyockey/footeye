@@ -4,7 +4,10 @@ import cv2 as cv
 import numpy as np
 import footeye.cvlib.frameutils as frameutils
 
-lower_green = np.array([30, 20, 20])
+COL_RED = (0, 0, 255)
+
+
+lower_green = np.array([30, 40, 40])
 upper_green = np.array([90, 180, 220])
 
 logframes = None
@@ -38,14 +41,14 @@ def mask_white(frame):
 
 
 def pitch_mask(frame):
-    frame = cv.medianBlur(frame, 5)
+    frame = cv.medianBlur(frame, 3)
     log_frame(frame, "Blurred")
     mask = mask_green(frame)
     log_frame(mask, "Green Mask")
-    kernel = np.ones((5, 5), np.uint8)
+    kernel = np.ones((4, 4), np.uint8)
     mask = cv.morphologyEx(mask, cv.MORPH_OPEN, kernel, iterations=3)
     log_frame(mask, "Morphed 1")
-    mask = cv.morphologyEx(mask, cv.MORPH_CLOSE, kernel, iterations=1)
+    mask = cv.morphologyEx(mask, cv.MORPH_CLOSE, kernel, iterations=2)
     log_frame(mask, "Morphed 2")
     return mask
 
@@ -80,13 +83,24 @@ def field_not_pitch_mask(frame):
     return fieldNotPitch
 
 
+def _likely_player(contour):
+    x, y, w, h = cv.boundingRect(contour)
+    aspect = w / h
+    return aspect < 8 and aspect > 0.125 and h > 20
+
+
 def extract_players(frame):
     fieldNotPitch = field_not_pitch_mask(frame)
     contours, hierarchy = cv.findContours(
         fieldNotPitch, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
-    drawn = cv.drawContours(frame, contours, -1, (0, 0, 255), 3)
+    rectFrame = frame.copy()
+    drawn = cv.drawContours(frame, contours, -1, COL_RED, 3)
     log_frame(drawn, "allContours")
-
+    contours = filter(_likely_player, contours)
+    for contour in contours:
+        x, y, w, h = cv.boundingRect(contour)
+        cv.rectangle(rectFrame, (x,y), (x+w,y+h), COL_RED, 3)
+    log_frame(rectFrame, "boundingRects")
 
 
 def find_lines(frame):

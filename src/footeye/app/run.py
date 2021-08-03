@@ -1,11 +1,25 @@
+import cv2 as cv
 import footeye.cvlib.frameutils as frameutils
 import footeye.cvlib.features as features
+import footeye.model.vidinfo as vidinfo
+import os.path
 
-import cv2 as cv
+
+def load_video(path):
+    if not os.path.isfile(path):
+        raise "No such file: " + path
+    vidInfo = vidinfo.VidInfo(path)
+    vid = cv.VideoCapture(path)
+    frameCount = vid.get(cv.CAP_PROP_FRAME_COUNT)
+    vid.release()
+    vidInfo.frameCount = frameCount
+    return vidInfo
 
 
-# features.enable_logging()
-frame = frameutils.extract_frame('c:\\stuff\\portland_la.ts', 75950)
+features.enable_logging()
+vidInfo = load_video('c:\\stuff\\portland_la.ts')
+frame = frameutils.extract_frame(vidInfo.vidFilePath, 75950)
+print(vidInfo.frameCount)
 
 features.extract_players(frame)
 
