@@ -1,6 +1,7 @@
+from sklearn.cluster import MeanShift, estimate_bandwidth
+
 import cv2 as cv
 import numpy as np
-
 import footeye.cvlib.frameutils as frameutils
 
 lower_green = np.array([30, 20, 20])
@@ -65,16 +66,27 @@ def mask_to_field(frame):
     return cv.bitwise_and(frame, frame, mask=fieldMask)
 
 
-def extract_players(frame):
+def field_not_pitch_mask(frame):
     pitchMask = pitch_mask(frame)
     onFieldMask = on_field_mask(pitchMask)
     field = cv.bitwise_and(frame, frame, mask=onFieldMask)
     log_frame(field, "Field")
-    notPitchMask = cv.bitwise_not(pitchMask)
+    notPitchMask = cv.bitwise_and(
+        onFieldMask, onFieldMask, mask=cv.bitwise_not(pitchMask))
     log_frame(notPitchMask, "Not pitch mask")
-    players = cv.bitwise_and(field, field, mask=notPitchMask)
-    log_frame(players, "Players")
-    return players
+    return notPitchMask
+    fieldNotPitch = cv.bitwise_and(field, field, mask=notPitchMask)
+    log_frame(fieldNotPitch, "Field not pitch")
+    return fieldNotPitch
+
+
+def extract_players(frame):
+    fieldNotPitch = field_not_pitch_mask(frame)
+    contours, hierarchy = cv.findContours(
+        fieldNotPitch, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+    drawn = cv.drawContours(frame, contours, -1, (0, 0, 255), 3)
+    log_frame(drawn, "allContours")
+
 
 
 def find_lines(frame):

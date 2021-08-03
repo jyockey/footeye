@@ -4,10 +4,12 @@ import footeye.cvlib.features as features
 import cv2 as cv
 
 
-features.enable_logging()
+# features.enable_logging()
 frame = frameutils.extract_frame('c:\\stuff\\portland_la.ts', 75950)
 
 features.extract_players(frame)
+
+
 idx = 0
 key = 0
 while (key != 113):
