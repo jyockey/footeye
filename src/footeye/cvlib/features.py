@@ -1,33 +1,18 @@
 from sklearn.cluster import MeanShift, estimate_bandwidth
+from matplotlib import pyplot as plt
 
 import cv2 as cv
 import numpy as np
 import footeye.cvlib.frameutils as frameutils
+import footeye.utils.framedebug as framedebug
+
 
 COL_RED = (0, 0, 255)
 
 
 lower_green = np.array([30, 40, 40])
 upper_green = np.array([90, 180, 220])
-
-logframes = None
-
-
-def enable_logging():
-    global logframes
-    logframes = []
-
-
-def log_frame(frame, desc):
-    global logframes
-    if logframes is not None:
-        if (len(frame.shape) < 3):
-            copy = cv.cvtColor(frame, cv.COLOR_GRAY2BGR)
-        else:
-            copy = frame.copy()
-        cv.putText(copy, desc, (20, 20), cv.FONT_HERSHEY_SIMPLEX, 0.6,
-                   (0, 0, 255), 2)
-        logframes.append(copy)
+# 50 to 150
 
 
 def mask_green(frame):
@@ -42,14 +27,14 @@ def mask_white(frame):
 
 def pitch_mask(frame):
     frame = cv.medianBlur(frame, 3)
-    log_frame(frame, "Blurred")
+    framedebug.log_frame(frame, "Blurred")
     mask = mask_green(frame)
-    log_frame(mask, "Green Mask")
+    framedebug.log_frame(mask, "Green Mask")
     kernel = np.ones((4, 4), np.uint8)
     mask = cv.morphologyEx(mask, cv.MORPH_OPEN, kernel, iterations=3)
-    log_frame(mask, "Morphed 1")
+    framedebug.log_frame(mask, "Morphed 1")
     mask = cv.morphologyEx(mask, cv.MORPH_CLOSE, kernel, iterations=2)
-    log_frame(mask, "Morphed 2")
+    framedebug.log_frame(mask, "Morphed 2")
     return mask
 
 
@@ -65,7 +50,7 @@ def on_field_mask(pitchMask):
 
 def mask_to_field(frame):
     fieldMask = on_field_mask(pitch_mask(frame))
-    log_frame(fieldMask, "Field Mask")
+    framedebug.log_frame(fieldMask, "Field Mask")
     return cv.bitwise_and(frame, frame, mask=fieldMask)
 
 
@@ -73,13 +58,13 @@ def field_not_pitch_mask(frame):
     pitchMask = pitch_mask(frame)
     onFieldMask = on_field_mask(pitchMask)
     field = cv.bitwise_and(frame, frame, mask=onFieldMask)
-    log_frame(field, "Field")
+    framedebug.log_frame(field, "Field")
     notPitchMask = cv.bitwise_and(
         onFieldMask, onFieldMask, mask=cv.bitwise_not(pitchMask))
-    log_frame(notPitchMask, "Not pitch mask")
+    framedebug.log_frame(notPitchMask, "Not pitch mask")
     return notPitchMask
     fieldNotPitch = cv.bitwise_and(field, field, mask=notPitchMask)
-    log_frame(fieldNotPitch, "Field not pitch")
+    framedebug.log_frame(fieldNotPitch, "Field not pitch")
     return fieldNotPitch
 
 
@@ -95,12 +80,12 @@ def extract_players(frame):
         fieldNotPitch, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
     rectFrame = frame.copy()
     drawn = cv.drawContours(frame, contours, -1, COL_RED, 3)
-    log_frame(drawn, "allContours")
+    framedebug.log_frame(drawn, "allContours")
     contours = filter(_likely_player, contours)
     for contour in contours:
         x, y, w, h = cv.boundingRect(contour)
         cv.rectangle(rectFrame, (x,y), (x+w,y+h), COL_RED, 3)
-    log_frame(rectFrame, "boundingRects")
+    framedebug.log_frame(rectFrame, "boundingRects")
 
 
 def find_lines(frame):
@@ -119,3 +104,20 @@ def find_lines(frame):
     cv.imshow('frame', frame)
     cv.waitKey(0)
     return frame
+
+
+def find_field_color_extents(vid):
+    # sample 20 frames
+    frameIds = [np.random.randint(vid.frameCount) for x in range(20)]
+    frames = frameutils.extract_frames(vid.vidFilePath, frameIds)
+    medianFrame = np.median(frames, axis=0).astype(dtype=np.uint8)
+    framedebug.log_frame(medianFrame, "Median")
+    hsvMedian = cv.cvtColor(medianFrame, cv.COLOR_BGR2HSV)
+    hues = cv.extractChannel(hsvMedian, 0)
+    stdev = np.std(hues)
+    mean = np.mean(hues)
+    print(stdev)
+    print(mean)
+    return [
+      np.array([max(0, int(mean - stdev)), 50, 150]),
+      np.array([min(255, int(mean + stdev)), 50, 150])]
