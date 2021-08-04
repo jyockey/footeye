@@ -17,16 +17,17 @@ def load_video(path):
 
 
 features.enable_logging()
-vidInfo = load_video('c:\\stuff\\portland_la.ts')
-frame = frameutils.extract_frame(vidInfo.vidFilePath, 75950)
-print(vidInfo.frameCount)
+vid = load_video('c:\\stuff\\portland_la.ts')
+frames = frameutils.extract_frames(vid.vidFilePath, [10000, 75000, 100000])
+frameutils.pixel_hue_variance(frames)
+# frame = frameutils.extract_frame(vid.vidFilePath, 75950)
+# print(vid.frameCount)
 
-features.extract_players(frame)
-
+# features.extract_players(frame)
 
 idx = 0
 key = 0
-while (key != 113):
+while len(features.logframes) > 0 and key != 113:
     cv.imshow('frame', features.logframes[idx])
     key = cv.waitKeyEx(0)
     if key == 2424832:

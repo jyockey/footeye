@@ -3,13 +3,63 @@ import numpy as np
 
 
 def extract_frame(file, frame_idx):
+    return extract_frames(file, [frame_idx])
+
+
+def extract_frames(file, frame_idxs):
+    frames = []
     vid = cv.VideoCapture(file)
-    vid.set(cv.CAP_PROP_POS_FRAMES, frame_idx)
-    ret, frame = vid.read()
+    for idx in frame_idxs:
+        vid.set(cv.CAP_PROP_POS_FRAMES, idx)
+        ret, frame = vid.read()
+        frames.append(frame)
     vid.release()
-    return frame
+    return frames
 
 
 def mask_color_range(frame, lower_color, upper_color):
     hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
     return cv.inRange(hsv, lower_color, upper_color)
+
+
+# Because hue values in HSV are circular, where value 0 and value 179 (max) are
+# very near rather than very far, calculating the (shortest-distance)
+# difference between two hues requires some special math
+def hue_diff(hueval1, hueval2):
+    rawval = hueval2 - hueval1
+    if rawval < -90:
+        return 180 + rawval
+    elif rawval > 90:
+        return -(180 - rawval)
+    else:
+        return rawval
+
+
+def running_mean_hue(existing_mean, new_val, source_count):
+    diff = hue_diff(existing_mean, new_val)
+    return (existing_mean + (diff / (source_count + 1))) % 180
+
+
+def pixel_mean_hues(frames):
+    means = np.zeros(frames[0].shape[0] * frames[0].shape[1])
+    for frameid in range(len(frames)):
+        print("Frame " + str(frameid))
+        frame = cv.cvtColor(frames[frameid], cv.COLOR_BGR2HSV)
+        hues = frame.reshape(-1, frame.shape[-1])[:, 0]
+        print(hues)
+        means = np.array([running_mean_hue(cur, hues[idx], frameid)
+                          for (idx, cur) in enumerate(means)])
+    return means
+
+
+def pixel_hue_variance(frames):
+    variances = np.zeros(frames[0].shape[0] * frames[0].shape[1])
+    means = pixel_mean_hues(frames)
+    for frameid in range(len(frames)):
+        print("Frame " + str(frameid))
+        frame = cv.cvtColor(frames[frameid], cv.COLOR_BGR2HSV)
+        hues = frame.reshape(-1, frame.shape[-1])[:, 0]
+        print(hues)
+        diffs = np.absolute(hues - means)
+        variances = variances + diffs
+    print(variances)
