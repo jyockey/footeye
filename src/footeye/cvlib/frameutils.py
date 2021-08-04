@@ -12,7 +12,10 @@ def extract_frames(file, frame_idxs):
     for idx in frame_idxs:
         vid.set(cv.CAP_PROP_POS_FRAMES, idx)
         ret, frame = vid.read()
-        frames.append(frame)
+        if frame is None:
+            print("Got no frame for idx " + str(idx))
+        else:
+            frames.append(frame)
     vid.release()
     return frames
 
