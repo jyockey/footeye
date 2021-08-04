@@ -1,4 +1,5 @@
 import footeye.cvlib.features as features
+import footeye.cvlib.frameutils as frameutils
 import footeye.model.vidinfo as vidinfo
 import footeye.utils.framedebug as framedebug
 
@@ -11,6 +12,9 @@ if (vid.fieldColorExtents is None):
     vid.fieldColorExtents = features.find_field_color_extents(vid)
 print(vid.fieldColorExtents)
 vid.save()
+
+frame = frameutils.extract_frame(vid.vidFilePath, 75950)
+features.extract_players(frame, vid)
 
 framedebug.show_frames()
 

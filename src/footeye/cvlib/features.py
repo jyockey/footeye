@@ -10,25 +10,19 @@ import footeye.utils.framedebug as framedebug
 COL_RED = (0, 0, 255)
 
 
-lower_green = np.array([30, 40, 40])
-upper_green = np.array([90, 180, 220])
-# 50 to 150
-
-
-def mask_green(frame):
-    return frameutils.mask_color_range(frame, lower_green, upper_green)
-
-
 def mask_white(frame):
     grayImage = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
     _, frame = cv.threshold(grayImage, 185, 255, cv.THRESH_BINARY)
     return frame
 
 
-def pitch_mask(frame):
+def pitch_mask(frame, min_pitch_color, max_pitch_color):
+    print(frame)
     frame = cv.medianBlur(frame, 3)
     framedebug.log_frame(frame, "Blurred")
-    mask = mask_green(frame)
+    print(min_pitch_color)
+    mask = frameutils.mask_color_range(frame, min_pitch_color, max_pitch_color)
+    print(max_pitch_color)
     framedebug.log_frame(mask, "Green Mask")
     kernel = np.ones((4, 4), np.uint8)
     mask = cv.morphologyEx(mask, cv.MORPH_OPEN, kernel, iterations=3)
@@ -41,6 +35,8 @@ def pitch_mask(frame):
 def on_field_mask(pitchMask):
     contours, hierarchy = cv.findContours(
             pitchMask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+    if (len(contours) == 0):
+        return pitchMask
     largestContour = max(contours, key=cv.contourArea)
     hull = cv.convexHull(largestContour)
     blank = np.zeros(pitchMask.shape[0:2], dtype="uint8")
@@ -54,8 +50,7 @@ def mask_to_field(frame):
     return cv.bitwise_and(frame, frame, mask=fieldMask)
 
 
-def field_not_pitch_mask(frame):
-    pitchMask = pitch_mask(frame)
+def field_not_pitch_mask(frame, pitchMask):
     onFieldMask = on_field_mask(pitchMask)
     field = cv.bitwise_and(frame, frame, mask=onFieldMask)
     framedebug.log_frame(field, "Field")
@@ -74,8 +69,10 @@ def _likely_player(contour):
     return aspect < 8 and aspect > 0.125 and h > 20
 
 
-def extract_players(frame):
-    fieldNotPitch = field_not_pitch_mask(frame)
+def extract_players(frame, vidinfo):
+    pitchMask = pitch_mask(
+      frame, vidinfo.fieldColorExtents[0], vidinfo.fieldColorExtents[1])
+    fieldNotPitch = field_not_pitch_mask(frame, pitchMask)
     contours, hierarchy = cv.findContours(
         fieldNotPitch, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
     rectFrame = frame.copy()
@@ -119,5 +116,5 @@ def find_field_color_extents(vid):
     print(stdev)
     print(mean)
     return [
-      np.array([max(0, int(mean - stdev)), 50, 150]),
-      np.array([min(255, int(mean + stdev)), 50, 150])]
+      np.array([max(0, int(mean - stdev)), 50, 50]),
+      np.array([min(255, int(mean + stdev)), 150, 150])]

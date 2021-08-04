@@ -3,7 +3,7 @@ import numpy as np
 
 
 def extract_frame(file, frame_idx):
-    return extract_frames(file, [frame_idx])
+    return extract_frames(file, [frame_idx])[0]
 
 
 def extract_frames(file, frame_idxs):
