@@ -1,6 +1,8 @@
 import cv2 as cv
 import numpy as np
 
+from matplotlib import pyplot as plt
+
 
 def extract_frame(file, frame_idx):
     return extract_frames(file, [frame_idx])[0]
@@ -66,3 +68,12 @@ def pixel_hue_variance(frames):
         diffs = np.absolute(hues - means)
         variances = variances + diffs
     print(variances)
+
+
+def histo(frame):
+    for channel in [0]:
+        print(channel)
+        hist = cv.calcHist([frame], [channel], None, [256], [0, 256])
+        plt.plot(hist)
+        plt.xlim([0, 256])
+    plt.show()

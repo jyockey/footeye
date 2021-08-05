@@ -20,6 +20,12 @@ def log_frame(frame, desc):
         logframes.append(copy)
 
 
+def show_for_click(frame, callback, params):
+    cv.imshow('frame', frame)
+    cv.setMouseCallback('frame', callback, params)
+    cv.waitKey(0)
+
+
 def show_frames():
     global logframes
     idx = 0

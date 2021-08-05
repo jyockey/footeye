@@ -1,5 +1,4 @@
 from sklearn.cluster import MeanShift, estimate_bandwidth
-from matplotlib import pyplot as plt
 
 import cv2 as cv
 import numpy as np
@@ -16,10 +15,16 @@ def mask_white(frame):
     return frame
 
 
+def colorclick(event, x, y, flags, param):
+    if event == cv.EVENT_LBUTTONDBLCLK:
+        frame = param
+        print(frame[y][x])
+
+
 def pitch_mask(frame, min_pitch_color, max_pitch_color):
-    print(frame)
     frame = cv.medianBlur(frame, 3)
     framedebug.log_frame(frame, "Blurred")
+    # framedebug.show_for_click(frame, colorclick, cv.cvtColor(frame, cv.COLOR_BGR2HSV))
     print(min_pitch_color)
     mask = frameutils.mask_color_range(frame, min_pitch_color, max_pitch_color)
     print(max_pitch_color)
@@ -110,11 +115,12 @@ def find_field_color_extents(vid):
     medianFrame = np.median(frames, axis=0).astype(dtype=np.uint8)
     framedebug.log_frame(medianFrame, "Median")
     hsvMedian = cv.cvtColor(medianFrame, cv.COLOR_BGR2HSV)
+    # frameutils.histo(hsvMedian)
     hues = cv.extractChannel(hsvMedian, 0)
     stdev = np.std(hues)
     mean = np.mean(hues)
     print(stdev)
     print(mean)
     return [
-      np.array([max(0, int(mean - stdev)), 50, 50]),
-      np.array([min(255, int(mean + stdev)), 150, 150])]
+      np.array([max(0, int(mean - stdev)), 0, 50]),
+      np.array([min(255, int(mean + stdev)), 150, 200])]

@@ -6,14 +6,14 @@ import footeye.utils.framedebug as framedebug
 
 framedebug.enable_logging()
 
-vid = vidinfo.VidInfo.forPath('c:\\stuff\\portland_la.ts')
+vid = vidinfo.VidInfo.forPath('c:\\proj\\footeye\\15.ts')
 
 if (vid.fieldColorExtents is None):
     vid.fieldColorExtents = features.find_field_color_extents(vid)
 print(vid.fieldColorExtents)
 vid.save()
 
-frame = frameutils.extract_frame(vid.vidFilePath, 75950)
+frame = frameutils.extract_frame(vid.vidFilePath, 30)
 features.extract_players(frame, vid)
 
 framedebug.show_frames()
