@@ -1,6 +1,7 @@
 from footeye.app.model import VidInfo, Project
 
 import argparse
+import cv2 as cv
 import pickle
 import footeye.visionlib.features as features
 import footeye.visionlib.frameutils as frameutils
@@ -21,15 +22,31 @@ def createProjectFromVideo(videoFile):
     return project
 
 
+def play_transformed(project, trans_function):
+    vid = cv.VideoCapture(project.vidinfo.vidFilePath)
+    while vid.isOpened():
+        ret, frame = vid.read()
+        # if frame is read correctly ret is True
+        if not ret:
+            print("Can't receive frame (stream end?). Exiting ...")
+            break
+        cv.imshow('frame', trans_function(frame))
+        if cv.waitKey(1) == ord('q'):
+            break
+    vid.release()
+
+
 def processProject(project):
     vid = project.vidinfo
     if (vid.fieldColorExtents is None):
         vid.fieldColorExtents = features.find_field_color_extents(vid)
-    print(vid.fieldColorExtents)
     project.save()
 
-    frame = frameutils.extract_frame(vid.vidFilePath, 3000)
-    features.extract_players(frame, vid)
+    # framedebug.enable_logging()
+    # frame = frameutils.extract_frame(vid.vidFilePath, 3000)
+    # features.extract_players(frame, vid)
+    # framedebug.show_frames()
+    play_transformed(project, lambda f: features.mask_to_field(f, vid))
 
 
 def runApp():
@@ -51,9 +68,7 @@ def runApp():
     processProject(project)
 
 
-framedebug.enable_logging()
 runApp()
-framedebug.show_frames()
 
 
 # variance = np.var(frames, axis=0)
@@ -81,16 +96,5 @@ framedebug.show_frames()
 #cv.imshow('frame', features.extract_players(frame))
 #cv.waitKey(0)
 
-#vid = cv.VideoCapture('c:\\proj\\footeye\\king_vid.mp4')
-#while vid.isOpened():
-#    ret, frame = vid.read()
-#    # if frame is read correctly ret is True
-#    if not ret:
-#        print("Can't receive frame (stream end?). Exiting ...")
-#        break
-#    cv.imshow('frame', features.extract_players(frame))
-#    if cv.waitKey(1) == ord('q'):
-#        break
-# When everything done, release the capture
-#vid.release()
+
 #cv.destroyAllWindows()

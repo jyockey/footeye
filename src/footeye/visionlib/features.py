@@ -28,9 +28,7 @@ def pitch_mask(frame, min_pitch_color, max_pitch_color):
     framedebug.log_frame(frame, "Blurred")
     # framedebug.show_for_click(
     # frame, colorclick, cv.cvtColor(frame, cv.COLOR_BGR2HSV))
-    print(min_pitch_color)
     mask = frameutils.mask_color_range(frame, min_pitch_color, max_pitch_color)
-    print(max_pitch_color)
     framedebug.log_frame(mask, "Green Mask")
     kernel = np.ones((6, 6), np.uint8)
     mask = cv.morphologyEx(mask, cv.MORPH_OPEN, kernel, iterations=3)
@@ -52,8 +50,10 @@ def on_field_mask(pitchMask):
             blank, [hull], -1, (255, 255, 255), -1)
 
 
-def mask_to_field(frame):
-    fieldMask = on_field_mask(pitch_mask(frame))
+def mask_to_field(frame, vidinfo):
+    pitchMask = pitch_mask(
+      frame, vidinfo.fieldColorExtents[0], vidinfo.fieldColorExtents[1])
+    fieldMask = on_field_mask(pitchMask)
     framedebug.log_frame(fieldMask, "Field Mask")
     return cv.bitwise_and(frame, frame, mask=fieldMask)
 
@@ -126,8 +126,6 @@ def find_field_color_extents(vid):
     hues = cv.extractChannel(hsvMedian, 0)
     stdev = np.std(hues)
     mean = np.mean(hues)
-    print(stdev)
-    print(mean)
     return [
       np.array([max(0, int(mean - stdev)), 20, 70]),
       np.array([min(255, int(mean + stdev)), 150, 200])]
