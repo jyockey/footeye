@@ -3,6 +3,11 @@ import cv2 as cv
 logframes = None
 
 
+def is_enabled():
+    global logframes
+    return logframes is not None
+
+
 def enable_logging():
     global logframes
     logframes = []

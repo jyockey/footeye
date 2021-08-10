@@ -46,7 +46,7 @@ def processProject(project):
     # frame = frameutils.extract_frame(vid.vidFilePath, 3000)
     # features.extract_players(frame, vid)
     # framedebug.show_frames()
-    play_transformed(project, lambda f: features.mask_to_field(f, vid))
+    play_transformed(project, lambda f: features.extract_players(f, vid))
 
 
 def runApp():

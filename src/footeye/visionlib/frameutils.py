@@ -30,7 +30,7 @@ def mask_color_range(frame, lower_color, upper_color):
 def draw_rect(frame, rect, color, width):
     x, y, w, h = rect
     cv.rectangle(frame, (x, y), (x + w, y + h), color, width)
-    
+
 
 # Because hue values in HSV are circular, where value 0 and value 179 (max) are
 # very near rather than very far, calculating the (shortest-distance)

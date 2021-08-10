@@ -84,17 +84,20 @@ def extract_players(frame, vidinfo):
     contours, hierarchy = cv.findContours(
         fieldNotPitch, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
     rects = list(map(lambda c: list(cv.boundingRect(c)), contours))
+    rects = list(filter(lambda r: r[2] > 15 and r[3] > 15, rects))
     medians = np.median(rects, axis=0)
     playerRects = filter(lambda c: _is_similar_rect(c, medians), rects)
     rectFrame = frame.copy()
-    drawn = cv.drawContours(frame, contours, -1, COL_RED, 3)
-    framedebug.log_frame(drawn, "allContours")
-    frameutils.draw_rect(rectFrame, medians.astype(int), COL_WHITE, 3)
-    for rect in rects:
-        frameutils.draw_rect(rectFrame, rect, COL_RED, 3)
+    if (framedebug.is_enabled()):
+        drawn = cv.drawContours(frame, contours, -1, COL_RED, 3)
+        framedebug.log_frame(drawn, "allContours")
+        frameutils.draw_rect(rectFrame, medians.astype(int), COL_WHITE, 3)
+        for rect in rects:
+            frameutils.draw_rect(rectFrame, rect, COL_RED, 3)
+        framedebug.log_frame(rectFrame, "boundingRects")
     for rect in playerRects:
-        frameutils.draw_rect(rectFrame, rect, COL_YELLOW, 3)
-    framedebug.log_frame(rectFrame, "boundingRects")
+        frameutils.draw_rect(frame, rect, COL_YELLOW, 3)
+    return frame
 
 
 def find_lines(frame):
