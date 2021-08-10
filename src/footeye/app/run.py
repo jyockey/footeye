@@ -13,7 +13,7 @@ if (vid.fieldColorExtents is None):
 print(vid.fieldColorExtents)
 vid.save()
 
-frame = frameutils.extract_frame(vid.vidFilePath, 30)
+frame = frameutils.extract_frame(vid.vidFilePath, 3000)
 features.extract_players(frame, vid)
 
 framedebug.show_frames()
