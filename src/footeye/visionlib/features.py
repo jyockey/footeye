@@ -7,6 +7,8 @@ import footeye.utils.framedebug as framedebug
 
 
 COL_RED = (0, 0, 255)
+COL_WHITE = (255, 255, 255)
+COL_YELLOW = (0, 255, 255)
 
 
 def mask_white(frame):
@@ -30,7 +32,7 @@ def pitch_mask(frame, min_pitch_color, max_pitch_color):
     mask = frameutils.mask_color_range(frame, min_pitch_color, max_pitch_color)
     print(max_pitch_color)
     framedebug.log_frame(mask, "Green Mask")
-    kernel = np.ones((4, 4), np.uint8)
+    kernel = np.ones((6, 6), np.uint8)
     mask = cv.morphologyEx(mask, cv.MORPH_OPEN, kernel, iterations=3)
     framedebug.log_frame(mask, "Morphed 1")
     mask = cv.morphologyEx(mask, cv.MORPH_CLOSE, kernel, iterations=2)
@@ -69,10 +71,10 @@ def field_not_pitch_mask(frame, pitchMask):
     return fieldNotPitch
 
 
-def _likely_player(contour):
-    x, y, w, h = cv.boundingRect(contour)
-    aspect = w / h
-    return aspect < 8 and aspect > 0.125 and h > 20
+def _is_similar_rect(rect, reference_rect):
+    wratio = rect[2] / reference_rect[2]
+    hratio = rect[3] / reference_rect[3]
+    return (0.5 < wratio < 2.0) and (0.5 < hratio < 2.0)
 
 
 def extract_players(frame, vidinfo):
@@ -81,13 +83,17 @@ def extract_players(frame, vidinfo):
     fieldNotPitch = field_not_pitch_mask(frame, pitchMask)
     contours, hierarchy = cv.findContours(
         fieldNotPitch, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+    rects = list(map(lambda c: list(cv.boundingRect(c)), contours))
+    medians = np.median(rects, axis=0)
+    playerRects = filter(lambda c: _is_similar_rect(c, medians), rects)
     rectFrame = frame.copy()
     drawn = cv.drawContours(frame, contours, -1, COL_RED, 3)
     framedebug.log_frame(drawn, "allContours")
-    contours = filter(_likely_player, contours)
-    for contour in contours:
-        x, y, w, h = cv.boundingRect(contour)
-        cv.rectangle(rectFrame, (x, y), (x + w, y + h), COL_RED, 3)
+    frameutils.draw_rect(rectFrame, medians.astype(int), COL_WHITE, 3)
+    for rect in rects:
+        frameutils.draw_rect(rectFrame, rect, COL_RED, 3)
+    for rect in playerRects:
+        frameutils.draw_rect(rectFrame, rect, COL_YELLOW, 3)
     framedebug.log_frame(rectFrame, "boundingRects")
 
 
@@ -123,5 +129,5 @@ def find_field_color_extents(vid):
     print(stdev)
     print(mean)
     return [
-      np.array([max(0, int(mean - stdev)), 0, 50]),
+      np.array([max(0, int(mean - stdev)), 20, 70]),
       np.array([min(255, int(mean + stdev)), 150, 200])]
