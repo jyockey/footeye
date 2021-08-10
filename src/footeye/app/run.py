@@ -1,4 +1,5 @@
 import argparse
+import pickle
 import footeye.visionlib.features as features
 import footeye.visionlib.frameutils as frameutils
 import footeye.model.vidinfo as vidinfo
@@ -6,7 +7,8 @@ import footeye.utils.framedebug as framedebug
 
 
 def loadProject(projectFile):
-    return 'yay'
+    with open(projectFile, 'rb') as f:
+        return pickle.load(f)
 
 
 def createProjectFromVideo(videoFile):

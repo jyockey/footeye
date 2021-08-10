@@ -24,7 +24,8 @@ def colorclick(event, x, y, flags, param):
 def pitch_mask(frame, min_pitch_color, max_pitch_color):
     frame = cv.medianBlur(frame, 3)
     framedebug.log_frame(frame, "Blurred")
-    # framedebug.show_for_click(frame, colorclick, cv.cvtColor(frame, cv.COLOR_BGR2HSV))
+    # framedebug.show_for_click(
+    # frame, colorclick, cv.cvtColor(frame, cv.COLOR_BGR2HSV))
     print(min_pitch_color)
     mask = frameutils.mask_color_range(frame, min_pitch_color, max_pitch_color)
     print(max_pitch_color)
@@ -86,7 +87,7 @@ def extract_players(frame, vidinfo):
     contours = filter(_likely_player, contours)
     for contour in contours:
         x, y, w, h = cv.boundingRect(contour)
-        cv.rectangle(rectFrame, (x,y), (x+w,y+h), COL_RED, 3)
+        cv.rectangle(rectFrame, (x, y), (x + w, y + h), COL_RED, 3)
     framedebug.log_frame(rectFrame, "boundingRects")
 
 
