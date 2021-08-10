@@ -2,7 +2,7 @@ from sklearn.cluster import MeanShift, estimate_bandwidth
 
 import cv2 as cv
 import numpy as np
-import footeye.cvlib.frameutils as frameutils
+import footeye.visionlib.frameutils as frameutils
 import footeye.utils.framedebug as framedebug
 
 

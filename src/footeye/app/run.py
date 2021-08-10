@@ -1,7 +1,24 @@
-import footeye.cvlib.features as features
-import footeye.cvlib.frameutils as frameutils
+import argparse
+import footeye.visionlib.features as features
+import footeye.visionlib.frameutils as frameutils
 import footeye.model.vidinfo as vidinfo
 import footeye.utils.framedebug as framedebug
+
+
+def runApp():
+    argparser = argparse.ArgumentParser(description='Run the footeye app')
+    group = argparser.add_mutually_exclusive_group(required=True)
+    group.add_argument('-p',
+                       metavar='PROJECT_FILE',
+                       help='an existing project file to open')
+    group.add_argument('-v',
+                       metavar='VIDEO_FILE',
+                       help='a video with which to create a new project')
+    args = argparser.parse_args()
+    print(args)
+
+
+runApp()
 
 
 framedebug.enable_logging()
