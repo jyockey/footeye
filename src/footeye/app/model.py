@@ -1,5 +1,4 @@
 from enum import Enum
-from hashlib import blake2b
 import cv2 as cv
 import pickle
 import os.path
@@ -22,37 +21,19 @@ class VidInfo:
         vid.release()
         self.frameCount = frameCount
 
-    def save(self):
-        filename = VidInfo._hashName(self.vidFilePath) + ".vidinfo"
-        with open(filename, 'wb') as f:
-            pickle.dump(self, f)
 
-    @staticmethod
-    def _hashName(filePath):
-        h = blake2b(digest_size=16)
-        h.update(filePath.encode('utf-8'))
-        return h.hexdigest()
-
-    @staticmethod
-    def forPath(vidFilePath):
-        filename = VidInfo._hashName(vidFilePath) + ".vidinfo"
-        if os.path.isfile(filename):
-            with open(filename, 'rb') as f:
-                return pickle.load(f)
-        return VidInfo(vidFilePath)
-
-
-class FooteyeProject:
+class Project:
     project_name = None
     vidinfo = None
     home_team = None
     away_team = None
 
-    def __init__(self, project_name):
+    def __init__(self, project_name, vidinfo):
         self.project_name = project_name
+        self.vidinfo = vidinfo
 
     def filename(self):
-        return self.project_name + ".fae"
+        return self.project_name + ".fey"
 
     def save(self):
         with open(self.filename(), 'wb') as f:

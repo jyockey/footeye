@@ -14,7 +14,7 @@ def loadProject(projectFile):
 
 def createProjectFromVideo(videoFile):
     vid = VidInfo(videoFile)
-    projName = input("Project Name? >")
+    projName = input("Project Name?> ")
     project = Project(projName, vid)
     print('Saving to ' + project.filename())
     project.save()
@@ -22,7 +22,14 @@ def createProjectFromVideo(videoFile):
 
 
 def processProject(project):
-    return 'yay'
+    vid = project.vidinfo
+    if (vid.fieldColorExtents is None):
+        vid.fieldColorExtents = features.find_field_color_extents(vid)
+    print(vid.fieldColorExtents)
+    project.save()
+
+    frame = frameutils.extract_frame(vid.vidFilePath, 3000)
+    features.extract_players(frame, vid)
 
 
 def runApp():
@@ -44,21 +51,10 @@ def runApp():
     processProject(project)
 
 
-runApp()
-
 framedebug.enable_logging()
-
-vid = vidinfo.VidInfo.forPath('c:\\proj\\footeye\\15.ts')
-
-if (vid.fieldColorExtents is None):
-    vid.fieldColorExtents = features.find_field_color_extents(vid)
-print(vid.fieldColorExtents)
-vid.save()
-
-frame = frameutils.extract_frame(vid.vidFilePath, 3000)
-features.extract_players(frame, vid)
-
+runApp()
 framedebug.show_frames()
+
 
 # variance = np.var(frames, axis=0)
 # flattened = variance.reshape(-1, variance.shape[-1])
