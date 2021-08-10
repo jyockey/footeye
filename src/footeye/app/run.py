@@ -1,8 +1,9 @@
+from footeye.app.model import VidInfo, Project
+
 import argparse
 import pickle
 import footeye.visionlib.features as features
 import footeye.visionlib.frameutils as frameutils
-import footeye.model.vidinfo as vidinfo
 import footeye.utils.framedebug as framedebug
 
 
@@ -12,7 +13,12 @@ def loadProject(projectFile):
 
 
 def createProjectFromVideo(videoFile):
-    return 'yay'
+    vid = VidInfo(videoFile)
+    projName = input("Project Name? >")
+    project = Project(projName, vid)
+    print('Saving to ' + project.filename())
+    project.save()
+    return project
 
 
 def processProject(project):
