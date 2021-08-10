@@ -5,6 +5,18 @@ import footeye.model.vidinfo as vidinfo
 import footeye.utils.framedebug as framedebug
 
 
+def loadProject(projectFile):
+    return 'yay'
+
+
+def createProjectFromVideo(videoFile):
+    return 'yay'
+
+
+def processProject(project):
+    return 'yay'
+
+
 def runApp():
     argparser = argparse.ArgumentParser(description='Run the footeye app')
     group = argparser.add_mutually_exclusive_group(required=True)
@@ -15,11 +27,16 @@ def runApp():
                        metavar='VIDEO_FILE',
                        help='a video with which to create a new project')
     args = argparser.parse_args()
-    print(args)
+
+    if args.p:
+        project = loadProject(args.p)
+    else:
+        project = createProjectFromVideo(args.v)
+
+    processProject(project)
 
 
 runApp()
-
 
 framedebug.enable_logging()
 
