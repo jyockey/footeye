@@ -12,6 +12,8 @@ import footeye.utils.framedebug as framedebug
 class RunAction(enum.Enum):
     PLAYEREXTRACT = 1
     COLORPICK = 2
+    PLAY_PLAYEREXTRACT = 3
+    PLAY_MASKTOFIELD = 4
 
     def __str__(self):
         return self.name.lower()
@@ -66,10 +68,13 @@ def processProject(project, action):
     if (action == RunAction.COLORPICK):
         features.colorpick_frame(frame)
     elif (action == RunAction.PLAYEREXTRACT):
-        # framedebug.enable_logging()
-        # features.extract_players(frame, vid)
-        # framedebug.show_frames()
+        framedebug.enable_logging()
+        features.extract_players(frame, vid)
+        framedebug.show_frames()
+    elif (action == RunAction.PLAY_PLAYEREXTRACT):
         play_transformed(project, lambda f: features.extract_players(f, vid))
+    elif (action == RunAction.PLAY_MASKTOFIELD):
+        play_transformed(project, lambda f: features.mask_to_field(f, vid))
     else:
         raise 'UnsupportedAction'
 
