@@ -2,10 +2,29 @@ from footeye.app.model import VidInfo, Project
 
 import argparse
 import cv2 as cv
+import enum
 import pickle
 import footeye.visionlib.features as features
 import footeye.visionlib.frameutils as frameutils
 import footeye.utils.framedebug as framedebug
+
+
+class RunAction(enum.Enum):
+    PLAYEREXTRACT = 1
+    COLORPICK = 2
+
+    def __str__(self):
+        return self.name.lower()
+
+    def __repr__(self):
+        return str(self)
+
+    @staticmethod
+    def argparse(s):
+        try:
+            return RunAction[s.upper()]
+        except KeyError:
+            return s
 
 
 def loadProject(projectFile):
@@ -36,17 +55,24 @@ def play_transformed(project, trans_function):
     vid.release()
 
 
-def processProject(project):
+def processProject(project, action):
     vid = project.vidinfo
     if (vid.fieldColorExtents is None):
         vid.fieldColorExtents = features.find_field_color_extents(vid)
     project.save()
 
-    # framedebug.enable_logging()
-    # frame = frameutils.extract_frame(vid.vidFilePath, 3000)
-    # features.extract_players(frame, vid)
-    # framedebug.show_frames()
-    play_transformed(project, lambda f: features.extract_players(f, vid))
+    print(vid.fieldColorExtents)
+    frame = frameutils.extract_frame(vid.vidFilePath, 3000)
+
+    if (action == RunAction.COLORPICK):
+        features.colorpick_frame(frame)
+    elif (action == RunAction.PLAYEREXTRACT):
+        framedebug.enable_logging()
+        features.extract_players(frame, vid)
+        framedebug.show_frames()
+        # play_transformed(project, lambda f: features.extract_players(f, vid))
+    else:
+        raise 'UnsupportedAction'
 
 
 def runApp():
@@ -58,6 +84,12 @@ def runApp():
     group.add_argument('-v',
                        metavar='VIDEO_FILE',
                        help='a video with which to create a new project')
+    argparser.add_argument('-a',
+                           metavar='ACTION',
+                           help='the action to perform',
+                           type=RunAction.argparse,
+                           choices=list(RunAction),
+                           default='playerextract')
     args = argparser.parse_args()
 
     if args.p:
@@ -65,7 +97,7 @@ def runApp():
     else:
         project = createProjectFromVideo(args.v)
 
-    processProject(project)
+    processProject(project, args.a)
 
 
 runApp()

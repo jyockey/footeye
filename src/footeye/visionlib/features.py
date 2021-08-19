@@ -18,9 +18,13 @@ def mask_white(frame):
 
 
 def colorclick(event, x, y, flags, param):
-    if event == cv.EVENT_LBUTTONDBLCLK:
+    if event == cv.EVENT_LBUTTONCLK:
         frame = param
         print(frame[y][x])
+
+
+def colorpick_frame(frame):
+    framedebug.show_for_click(frame, colorclick, frame)
 
 
 def pitch_mask(frame, min_pitch_color, max_pitch_color):
@@ -66,9 +70,9 @@ def field_not_pitch_mask(frame, pitchMask):
         onFieldMask, onFieldMask, mask=cv.bitwise_not(pitchMask))
     framedebug.log_frame(notPitchMask, "Not pitch mask")
     return notPitchMask
-    fieldNotPitch = cv.bitwise_and(field, field, mask=notPitchMask)
-    framedebug.log_frame(fieldNotPitch, "Field not pitch")
-    return fieldNotPitch
+    # fieldNotPitch = cv.bitwise_and(field, field, mask=notPitchMask)
+    # framedebug.log_frame(fieldNotPitch, "Field not pitch")
+    # return fieldNotPitch
 
 
 def _is_similar_rect(rect, reference_rect):
@@ -97,6 +101,7 @@ def extract_players(frame, vidinfo):
         framedebug.log_frame(rectFrame, "boundingRects")
     for rect in playerRects:
         frameutils.draw_rect(frame, rect, COL_YELLOW, 3)
+    framedebug.log_frame(frame, "playerRects")
     return frame
 
 
