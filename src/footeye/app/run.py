@@ -63,7 +63,7 @@ def process_project(project, action):
         vid.fieldColorExtents = features.find_field_color_extents(vid)
     project.save()
 
-    frame = frameutils.extract_frame(vid.vidFilePath, 3000)
+    frame = frameutils.extract_frame(vid.vidFilePath, 10)
 
     if (action == RunAction.COLORPICK):
         features.colorpick_frame(frame)

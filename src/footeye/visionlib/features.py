@@ -5,6 +5,7 @@ import numpy as np
 import footeye.visionlib.frameutils as frameutils
 import footeye.utils.framedebug as framedebug
 
+FRAME_GREEN_RATIO_CUTOFF = 0.45
 
 COL_RED = (0, 0, 255)
 COL_WHITE = (255, 255, 255)
@@ -37,6 +38,15 @@ def pitch_mask(frame, min_pitch_color, max_pitch_color):
     # frame, colorclick, cv.cvtColor(frame, cv.COLOR_BGR2HSV))
     mask = frameutils.mask_color_range(frame, min_pitch_color, max_pitch_color)
     framedebug.log_frame(mask, "Green Mask")
+
+    # If there's insufficient green in a frame, we assume it isn't valid for
+    # pitch location.
+    # TODO: This should probably be done at the on_field_mask layer instead
+    pixels = cv.countNonZero(mask)
+    frame_area = frame.shape[0] * frame.shape[1]
+    if (pixels / frame_area) < FRAME_GREEN_RATIO_CUTOFF:
+        return None
+
     kernel = np.ones((5, 5), np.uint8)
     mask = cv.morphologyEx(mask, cv.MORPH_OPEN, kernel, iterations=3)
     framedebug.log_frame(mask, "Morphed 1")
@@ -60,6 +70,8 @@ def on_field_mask(pitchMask):
 def mask_to_field(frame, vidinfo):
     pitchMask = pitch_mask(
       frame, vidinfo.fieldColorExtents[0], vidinfo.fieldColorExtents[1])
+    if pitchMask is None:
+        return frame
     fieldMask = on_field_mask(pitchMask)
     framedebug.log_frame(fieldMask, "Field Mask")
     return cv.bitwise_and(frame, frame, mask=fieldMask)
@@ -87,6 +99,10 @@ def _is_similar_rect(rect, reference_rect):
 def extract_players(frame, vidinfo):
     pitchMask = pitch_mask(
       frame, vidinfo.fieldColorExtents[0], vidinfo.fieldColorExtents[1])
+    if pitchMask is None:
+        frameutils.header_text(frame, 'NOT PITCH')
+        framedebug.log_frame(frame, "")
+        return frame
     fieldNotPitch = field_not_pitch_mask(frame, pitchMask)
     contours, hierarchy = cv.findContours(
         fieldNotPitch, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)

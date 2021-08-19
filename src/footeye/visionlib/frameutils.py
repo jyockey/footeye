@@ -32,6 +32,11 @@ def draw_rect(frame, rect, color, width):
     cv.rectangle(frame, (x, y), (x + w, y + h), color, width)
 
 
+def header_text(frame, text):
+    cv.putText(frame, text, (20, 20), cv.FONT_HERSHEY_SIMPLEX, 0.6,
+               (0, 0, 255), 2)
+
+
 # Because hue values in HSV are circular, where value 0 and value 179 (max) are
 # very near rather than very far, calculating the (shortest-distance)
 # difference between two hues requires some special math
