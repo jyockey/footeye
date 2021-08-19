@@ -18,13 +18,16 @@ def mask_white(frame):
 
 
 def colorclick(event, x, y, flags, param):
-    if event == cv.EVENT_LBUTTONCLK:
+    if event == cv.EVENT_LBUTTONDOWN:
         frame = param
         print(frame[y][x])
 
 
 def colorpick_frame(frame):
-    framedebug.show_for_click(frame, colorclick, frame)
+    framedebug.show_for_click(
+            frame,
+            colorclick,
+            cv.cvtColor(frame, cv.COLOR_BGR2HSV))
 
 
 def pitch_mask(frame, min_pitch_color, max_pitch_color):
@@ -34,7 +37,7 @@ def pitch_mask(frame, min_pitch_color, max_pitch_color):
     # frame, colorclick, cv.cvtColor(frame, cv.COLOR_BGR2HSV))
     mask = frameutils.mask_color_range(frame, min_pitch_color, max_pitch_color)
     framedebug.log_frame(mask, "Green Mask")
-    kernel = np.ones((6, 6), np.uint8)
+    kernel = np.ones((5, 5), np.uint8)
     mask = cv.morphologyEx(mask, cv.MORPH_OPEN, kernel, iterations=3)
     framedebug.log_frame(mask, "Morphed 1")
     mask = cv.morphologyEx(mask, cv.MORPH_CLOSE, kernel, iterations=2)
@@ -88,7 +91,7 @@ def extract_players(frame, vidinfo):
     contours, hierarchy = cv.findContours(
         fieldNotPitch, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
     rects = list(map(lambda c: list(cv.boundingRect(c)), contours))
-    rects = list(filter(lambda r: r[2] > 15 and r[3] > 15, rects))
+    rects = list(filter(lambda r: r[2] > 10 and r[3] > 10, rects))
     medians = np.median(rects, axis=0)
     playerRects = filter(lambda c: _is_similar_rect(c, medians), rects)
     rectFrame = frame.copy()
@@ -136,4 +139,4 @@ def find_field_color_extents(vid):
     mean = np.mean(hues)
     return [
       np.array([max(0, int(mean - stdev)), 20, 70]),
-      np.array([min(255, int(mean + stdev)), 150, 200])]
+      np.array([min(255, int(mean + stdev)), 240, 200])]

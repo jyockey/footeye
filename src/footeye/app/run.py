@@ -61,16 +61,15 @@ def processProject(project, action):
         vid.fieldColorExtents = features.find_field_color_extents(vid)
     project.save()
 
-    print(vid.fieldColorExtents)
     frame = frameutils.extract_frame(vid.vidFilePath, 3000)
 
     if (action == RunAction.COLORPICK):
         features.colorpick_frame(frame)
     elif (action == RunAction.PLAYEREXTRACT):
-        framedebug.enable_logging()
-        features.extract_players(frame, vid)
-        framedebug.show_frames()
-        # play_transformed(project, lambda f: features.extract_players(f, vid))
+        # framedebug.enable_logging()
+        # features.extract_players(frame, vid)
+        # framedebug.show_frames()
+        play_transformed(project, lambda f: features.extract_players(f, vid))
     else:
         raise 'UnsupportedAction'
 
