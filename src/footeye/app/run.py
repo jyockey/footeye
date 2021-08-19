@@ -29,12 +29,12 @@ class RunAction(enum.Enum):
             return s
 
 
-def loadProject(projectFile):
+def load_project(projectFile):
     with open(projectFile, 'rb') as f:
         return pickle.load(f)
 
 
-def createProjectFromVideo(videoFile):
+def create_project_from_video(videoFile):
     vid = VidInfo(videoFile)
     projName = input("Project Name?> ")
     project = Project(projName, vid)
@@ -57,7 +57,7 @@ def play_transformed(project, trans_function):
     vid.release()
 
 
-def processProject(project, action):
+def process_project(project, action):
     vid = project.vidinfo
     if (vid.fieldColorExtents is None):
         vid.fieldColorExtents = features.find_field_color_extents(vid)
@@ -79,7 +79,7 @@ def processProject(project, action):
         raise 'UnsupportedAction'
 
 
-def runApp():
+def run_app():
     argparser = argparse.ArgumentParser(description='Run the footeye app')
     group = argparser.add_mutually_exclusive_group(required=True)
     group.add_argument('-p',
@@ -97,14 +97,14 @@ def runApp():
     args = argparser.parse_args()
 
     if args.p:
-        project = loadProject(args.p)
+        project = load_project(args.p)
     else:
-        project = createProjectFromVideo(args.v)
+        project = create_project_from_video(args.v)
 
-    processProject(project, args.a)
+    process_project(project, args.a)
 
 
-runApp()
+run_app()
 
 
 # variance = np.var(frames, axis=0)
