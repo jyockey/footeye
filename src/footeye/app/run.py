@@ -57,13 +57,13 @@ def play_transformed(project, trans_function):
     vid.release()
 
 
-def process_project(project, action):
+def process_project(project, action, frame_idx):
     vid = project.vidinfo
     if (vid.fieldColorExtents is None):
         vid.fieldColorExtents = features.find_field_color_extents(vid)
     project.save()
 
-    frame = frameutils.extract_frame(vid.vidFilePath, 10)
+    frame = frameutils.extract_frame(vid.vidFilePath, frame_idx)
 
     if (action == RunAction.COLORPICK):
         features.colorpick_frame(frame)
@@ -94,6 +94,11 @@ def run_app():
                            type=RunAction.argparse,
                            choices=list(RunAction),
                            default='playerextract')
+    argparser.add_argument('-f',
+                           metavar='FRAME_INDEX',
+                           help='the index of a frame to operate on',
+                           type=int,
+                           default=1)
     args = argparser.parse_args()
 
     if args.p:
@@ -101,7 +106,7 @@ def run_app():
     else:
         project = create_project_from_video(args.v)
 
-    process_project(project, args.a)
+    process_project(project, args.a, args.f)
 
 
 run_app()
