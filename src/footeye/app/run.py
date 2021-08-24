@@ -14,6 +14,9 @@ class RunAction(enum.Enum):
     COLORPICK = 2
     PLAY_PLAYEREXTRACT = 3
     PLAY_MASKTOFIELD = 4
+    LINES = 5
+    PLAY_LINES = 6
+    PITCH_ORIENTATION = 7
 
     def __str__(self):
         return self.name.lower()
@@ -63,6 +66,8 @@ def process_project(project, action, frame_idx):
         vid.fieldColorExtents = features.find_field_color_extents(vid)
     project.save()
 
+    print(vid.fieldColorExtents)
+
     frame = frameutils.extract_frame(vid.vidFilePath, frame_idx)
 
     if (action == RunAction.COLORPICK):
@@ -71,10 +76,20 @@ def process_project(project, action, frame_idx):
         framedebug.enable_logging()
         features.extract_players(frame, vid)
         framedebug.show_frames()
+    elif (action == RunAction.LINES):
+        framedebug.enable_logging()
+        features.find_lines(frame, vid)
+        framedebug.show_frames()
+    elif (action == RunAction.PITCH_ORIENTATION):
+        framedebug.enable_logging()
+        features.pitch_orientation(frame, vid)
+        framedebug.show_frames()
     elif (action == RunAction.PLAY_PLAYEREXTRACT):
         play_transformed(project, lambda f: features.extract_players(f, vid))
     elif (action == RunAction.PLAY_MASKTOFIELD):
         play_transformed(project, lambda f: features.mask_to_field(f, vid))
+    elif (action == RunAction.PLAY_LINES):
+        play_transformed(project, lambda f: features.find_lines(f, vid))
     else:
         raise 'UnsupportedAction'
 

@@ -37,6 +37,15 @@ def header_text(frame, text):
                (0, 0, 255), 2)
 
 
+def clahe_frame(frame):
+    labFrame = cv.cvtColor(frame, cv.COLOR_BGR2LAB)
+    clahe = cv.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    planes = cv.split(labFrame)
+    planes[0] = clahe.apply(planes[0])
+    labFrames = cv.merge(planes)
+    return cv.cvtColor(labFrames, cv.COLOR_LAB2BGR)
+
+
 # Because hue values in HSV are circular, where value 0 and value 179 (max) are
 # very near rather than very far, calculating the (shortest-distance)
 # difference between two hues requires some special math
