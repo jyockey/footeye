@@ -1,4 +1,4 @@
-from footeye.app.model import VidInfo, Project
+from footeye.app.model import VidInfo, Project, FrameInfo
 
 import argparse
 import cv2 as cv
@@ -17,6 +17,7 @@ class RunAction(enum.Enum):
     LINES = 5
     PLAY_LINES = 6
     PITCH_ORIENTATION = 7
+    PROCESS_FRAME = 8
 
     def __str__(self):
         return self.name.lower()
@@ -84,6 +85,11 @@ def process_project(project, action, frame_idx):
         framedebug.enable_logging()
         features.pitch_orientation(frame, vid)
         framedebug.show_frames()
+    elif (action == RunAction.PROCESS_FRAME):
+        framedebug.enable_logging()
+        frame = process_frame(frame, frame_idx, vid)
+        framedebug.show_frames()
+        print(frame)
     elif (action == RunAction.PLAY_PLAYEREXTRACT):
         play_transformed(project, lambda f: features.extract_players(f, vid))
     elif (action == RunAction.PLAY_MASKTOFIELD):
@@ -92,6 +98,16 @@ def process_project(project, action, frame_idx):
         play_transformed(project, lambda f: features.find_lines(f, vid))
     else:
         raise 'UnsupportedAction'
+
+
+def process_frame(frame, frame_idx, vid):
+    frame_info = FrameInfo(frame_idx)
+    frame_info.raw_features = features.extract_feature_rects(frame, vid)
+    frame_info.player_size = features.estimate_player_size(
+            frame_info.raw_features)
+    frame_info.player_entities = features.extract_players_from_rects(
+            frame, frame_info.raw_features, frame_info.player_size)
+    return frame_info
 
 
 def run_app():

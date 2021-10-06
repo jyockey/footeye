@@ -103,7 +103,7 @@ def _is_similar_rect(rect, reference_rect):
     return (0.5 < wratio < 2.0) and (0.5 < hratio < 2.0)
 
 
-def extract_players(frame, vidinfo):
+def extract_feature_rects(frame, vidinfo):
     pitchMask = pitch_mask(
       frame, vidinfo.fieldColorExtents[0], vidinfo.fieldColorExtents[1])
     if pitchMask is None:
@@ -113,15 +113,22 @@ def extract_players(frame, vidinfo):
     fieldNotPitch = field_not_pitch_mask(frame, pitchMask, vidinfo)
     contours, hierarchy = cv.findContours(
         fieldNotPitch, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
-    rects = list(map(lambda c: list(cv.boundingRect(c)), contours))
-    rects = list(filter(lambda r: r[2] > 10 and r[3] > 10, rects))
-    medians = np.median(rects, axis=0)
-    playerRects = filter(lambda c: _is_similar_rect(c, medians), rects)
-    rectFrame = frame.copy()
     if (framedebug.is_enabled()):
         drawn = cv.drawContours(frame, contours, -1, COL_RED, 3)
         framedebug.log_frame(drawn, "allContours")
-        frameutils.draw_rect(rectFrame, medians.astype(int), COL_WHITE, 3)
+    rects = list(map(lambda c: list(cv.boundingRect(c)), contours))
+    return list(filter(lambda r: r[2] > 10 and r[3] > 10, rects))
+
+
+def estimate_player_size(rects):
+    return np.median(rects, axis=0)
+
+
+def extract_players_from_rects(frame, rects, player_size):
+    playerRects = filter(lambda c: _is_similar_rect(c, player_size), rects)
+    rectFrame = frame.copy()
+    if (framedebug.is_enabled()):
+        frameutils.draw_rect(rectFrame, player_size.astype(int), COL_WHITE, 3)
         for rect in rects:
             frameutils.draw_rect(rectFrame, rect, COL_RED, 3)
         framedebug.log_frame(rectFrame, "boundingRects")
@@ -129,6 +136,12 @@ def extract_players(frame, vidinfo):
         frameutils.draw_rect(frame, rect, COL_YELLOW, 3)
     framedebug.log_frame(frame, "playerRects")
     return frame
+
+
+def extract_players(frame, vidinfo):
+    rects = extract_feature_rects(frame, vidinfo)
+    player_size = estimate_player_size(rects)
+    return extract_players_from_rects(frame, rects, player_size)
 
 
 def pitch_orientation(frame, vidinfo):

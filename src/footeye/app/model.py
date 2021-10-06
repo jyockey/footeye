@@ -55,7 +55,21 @@ class ShotType(Enum):
 class Scene:
     sceneType = None
     shotType = None
+    frames = []
 
     def __init__(self, frameStart, frameCount):
         self.frameStart = frameStart
         self.frameCount = frameCount
+
+
+class FrameInfo:
+    frame_idx = None
+    timestamp = None
+    raw_features = []
+    player_entities = []
+    ball_entity = None
+    player_size = None
+    camera_angle = None
+
+    def __init__(self, frame_idx):
+        self.frame_idx = frame_idx
