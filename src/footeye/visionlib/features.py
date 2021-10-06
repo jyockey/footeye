@@ -190,12 +190,12 @@ def find_lines(frame, vidinfo):
     mask = mask_white(field)
     framedebug.log_frame(mask, 'Mask White')
     linesFrame = frame.copy()
-    lines = cv.HoughLinesP(mask, 1, np.pi / 180, 50, None, frame.shape[1] / 6, 30)
+    lines = cv.HoughLinesP(mask, 1, np.pi / 180, 50, None, frame.shape[1] / 6, 20)
     if lines is not None:
         for i in range(0, len(lines)):
             li = lines[i][0]
             cv.line(linesFrame, (li[0], li[1]), (li[2], li[3]), (50, 50, 255),
-                    3, cv.LINE_AA)
+                    1, cv.LINE_AA)
     framedebug.log_frame(linesFrame, 'lines')
     return linesFrame
 
