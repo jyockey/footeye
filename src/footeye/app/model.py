@@ -27,6 +27,7 @@ class Project:
     vidinfo = None
     home_team = None
     away_team = None
+    scenes = []
 
     def __init__(self, project_name, vidinfo):
         self.project_name = project_name
@@ -53,13 +54,19 @@ class ShotType(Enum):
 
 
 class Scene:
-    sceneType = None
-    shotType = None
+    scene_type = None
+    shot_type = None
+    frame_start = 0
+    frame_count = 0
     frames = []
 
-    def __init__(self, frameStart, frameCount):
-        self.frameStart = frameStart
-        self.frameCount = frameCount
+    def __init__(self, frame_start):
+        self.frame_start = frame_start
+
+    def __str__(self):
+        return "SCENE {0} [{1}]".format(self.frame_start, self.frame_count)
+
+    __repr__ = __str__
 
 
 class FrameInfo:

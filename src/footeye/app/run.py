@@ -1,4 +1,4 @@
-from footeye.app.model import VidInfo, Project, FrameInfo
+from footeye.app.model import VidInfo, Project, FrameInfo, Scene
 
 import argparse
 import cv2 as cv
@@ -114,10 +114,13 @@ def process_frame(frame, frame_idx, vid):
 
 
 def break_scenes(project):
+    scenes = []
     last_frame = None
+    frame_idx = 0
     vid = cv.VideoCapture(project.vidinfo.vidFilePath)
     while vid.isOpened():
         ret, frame = vid.read()
+        frame_idx = frame_idx + 1
         # if frame is read correctly ret is True
         if not ret:
             print("Can't receive frame (stream end?). Exiting ...")
@@ -125,9 +128,17 @@ def break_scenes(project):
         hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
         cv.imshow('frame', frame)
         is_break = features.scene_break_check(hsv, last_frame)
+        if (is_break):
+            if scenes:
+                scenes[-1].frame_count = frame_idx - scenes[-1].frame_start
+            scenes.append(Scene(frame_idx))
+            print("Scene at " + str(frame_idx))
         if cv.waitKey(0 if is_break else 1) == ord('q'):
             break
         last_frame = hsv
+    print(scenes)
+    project.scenes = scenes
+    project.save()
     vid.release()
 
 

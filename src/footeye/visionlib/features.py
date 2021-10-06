@@ -5,7 +5,7 @@ import numpy as np
 import footeye.visionlib.frameutils as frameutils
 import footeye.utils.framedebug as framedebug
 
-SCENE_DIFF_THRESHOLD = 45
+SCENE_DIFF_THRESHOLD = 80
 
 FRAME_GREEN_RATIO_CUTOFF = 0.45
 
@@ -242,5 +242,4 @@ def scene_break_check(frame, prev_frame):
     prev_hist = cv.calcHist([prev_frame], [0], None, [buckets], [0, 256])
 
     diff = np.sum(np.abs(hist - prev_hist)) / size
-    print(diff)
-    return diff > 80
+    return diff > SCENE_DIFF_THRESHOLD
