@@ -18,6 +18,7 @@ class RunAction(enum.Enum):
     PLAY_LINES = 6
     PITCH_ORIENTATION = 7
     PROCESS_FRAME = 8
+    SCENE_BREAK = 9
 
     def __str__(self):
         return self.name.lower()
@@ -96,6 +97,8 @@ def process_project(project, action, frame_idx):
         play_transformed(project, lambda f: features.mask_to_field(f, vid))
     elif (action == RunAction.PLAY_LINES):
         play_transformed(project, lambda f: features.find_lines(f, vid))
+    elif (action == RunAction.SCENE_BREAK):
+        break_scenes(project)
     else:
         raise 'UnsupportedAction'
 
@@ -108,6 +111,24 @@ def process_frame(frame, frame_idx, vid):
     frame_info.player_entities = features.extract_players_from_rects(
             frame, frame_info.raw_features, frame_info.player_size)
     return frame_info
+
+
+def break_scenes(project):
+    last_frame = None
+    vid = cv.VideoCapture(project.vidinfo.vidFilePath)
+    while vid.isOpened():
+        ret, frame = vid.read()
+        # if frame is read correctly ret is True
+        if not ret:
+            print("Can't receive frame (stream end?). Exiting ...")
+            break
+        hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
+        cv.imshow('frame', frame)
+        is_break = features.scene_break_check(hsv, last_frame)
+        if cv.waitKey(0 if is_break else 1) == ord('q'):
+            break
+        last_frame = hsv
+    vid.release()
 
 
 def run_app():

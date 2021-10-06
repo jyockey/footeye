@@ -5,6 +5,8 @@ import numpy as np
 import footeye.visionlib.frameutils as frameutils
 import footeye.utils.framedebug as framedebug
 
+SCENE_DIFF_THRESHOLD = 45
+
 FRAME_GREEN_RATIO_CUTOFF = 0.45
 
 COL_RED = (0, 0, 255)
@@ -227,3 +229,18 @@ def find_field_color_extents(vid):
     return [
       np.array([max(0, int(mean - stdev)), 20, 70]),
       np.array([min(255, int(mean + stdev)), 255, 200])]
+
+
+def scene_break_check(frame, prev_frame):
+    if prev_frame is None:
+        return True
+
+    size = frame[0].shape[0] * frame[0].shape[1]
+    buckets = 100
+
+    hist = cv.calcHist([frame], [0], None, [buckets], [0, 256])
+    prev_hist = cv.calcHist([prev_frame], [0], None, [buckets], [0, 256])
+
+    diff = np.sum(np.abs(hist - prev_hist)) / size
+    print(diff)
+    return diff > 80
