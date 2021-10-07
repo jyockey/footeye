@@ -1,9 +1,10 @@
-from footeye.app.model import VidInfo, Project, FrameInfo, Scene
+from footeye.app.model import VidInfo, Project, FrameInfo
 
 import argparse
 import cv2 as cv
 import enum
 import pickle
+import scene_breaker
 import footeye.visionlib.features as features
 import footeye.visionlib.frameutils as frameutils
 import footeye.utils.framedebug as framedebug
@@ -98,7 +99,8 @@ def process_project(project, action, frame_idx):
     elif (action == RunAction.PLAY_LINES):
         play_transformed(project, lambda f: features.find_lines(f, vid))
     elif (action == RunAction.SCENE_BREAK):
-        break_scenes(project)
+        project.scenes = scene_breaker.break_scenes(project)
+        project.save()
     else:
         raise 'UnsupportedAction'
 
@@ -111,35 +113,6 @@ def process_frame(frame, frame_idx, vid):
     frame_info.player_entities = features.extract_players_from_rects(
             frame, frame_info.raw_features, frame_info.player_size)
     return frame_info
-
-
-def break_scenes(project):
-    scenes = []
-    last_frame = None
-    frame_idx = 0
-    vid = cv.VideoCapture(project.vidinfo.vidFilePath)
-    while vid.isOpened():
-        ret, frame = vid.read()
-        frame_idx = frame_idx + 1
-        # if frame is read correctly ret is True
-        if not ret:
-            print("Can't receive frame (stream end?). Exiting ...")
-            break
-        hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
-        cv.imshow('frame', frame)
-        is_break = features.scene_break_check(hsv, last_frame)
-        if (is_break):
-            if scenes:
-                scenes[-1].frame_count = frame_idx - scenes[-1].frame_start
-            scenes.append(Scene(frame_idx))
-            print("Scene at " + str(frame_idx))
-        if cv.waitKey(0 if is_break else 1) == ord('q'):
-            break
-        last_frame = hsv
-    print(scenes)
-    project.scenes = scenes
-    project.save()
-    vid.release()
 
 
 def run_app():
