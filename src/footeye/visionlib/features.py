@@ -57,7 +57,6 @@ def pitch_mask(frame, min_pitch_color, max_pitch_color):
 
 
 def on_field_mask(pitchMask):
-    return pitchMask
     contours, hierarchy = cv.findContours(
             pitchMask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
     if (len(contours) == 0):
@@ -81,10 +80,12 @@ def mask_to_field(frame, vidinfo):
 
 def field_not_pitch_mask(frame, pitchMask, vidinfo):
     onFieldMask = on_field_mask(pitchMask)
+    framedebug.log_frame(onFieldMask, "On Field")
     field = cv.bitwise_and(frame, frame, mask=onFieldMask)
     framedebug.log_frame(field, "Field")
-    equalized = frameutils.clahe_frame(field)
-    framedebug.log_frame(equalized, "Equalized")
+    #equalized = frameutils.clahe_frame(field)
+    #framedebug.log_frame(equalized, "Equalized")
+    equalized = field
     mask = frameutils.mask_color_range(equalized, vidinfo.fieldColorExtents[0], vidinfo.fieldColorExtents[1])
     framedebug.log_frame(mask, "Green Mask")
     kernel = np.ones((3, 3), np.uint8)
@@ -111,7 +112,7 @@ def extract_feature_rects(frame, vidinfo):
     if pitchMask is None:
         frameutils.header_text(frame, 'NOT PITCH')
         framedebug.log_frame(frame, "")
-        return frame
+        return []
     fieldNotPitch = field_not_pitch_mask(frame, pitchMask, vidinfo)
     contours, hierarchy = cv.findContours(
         fieldNotPitch, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
@@ -142,6 +143,8 @@ def extract_players_from_rects(frame, rects, player_size):
 
 def extract_players(frame, vidinfo):
     rects = extract_feature_rects(frame, vidinfo)
+    if not rects:
+        return frame
     player_size = estimate_player_size(rects)
     return extract_players_from_rects(frame, rects, player_size)
 

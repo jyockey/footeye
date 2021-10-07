@@ -1,10 +1,11 @@
 import cv2 as cv
 
 
-def play(project, trans_function=None, scene=None, loop=True):
+def play(project, trans_function=None, scene=None, loop=True, frame_idx=True):
     vid = cv.VideoCapture(project.vidinfo.vidFilePath)
     frame_start = scene.frame_start if scene else 1
-    frame_count = scene.frame_count if scene else vid.get(cv.CAP_PROP_FRAME_COUNT)
+    frame_count = (scene.frame_count if scene
+                   else vid.get(cv.CAP_PROP_FRAME_COUNT))
 
     while True:
         idx = 0
@@ -18,9 +19,12 @@ def play(project, trans_function=None, scene=None, loop=True):
                 print("Can't receive frame (stream end?). Exiting ...")
                 break
             frame = trans_function(frame) if trans_function else frame
+            if (frame_idx):
+                cv.putText(frame, str(frame_start + idx), (20, 100),
+                           cv.FONT_HERSHEY_SIMPLEX, 0.6, (255, 200, 255), 1)
             cv.imshow('frame', frame)
             if cv.waitKey(1) == ord('q'):
-                break
+                return
             idx = idx + 1
         if not loop:
             break
