@@ -5,6 +5,7 @@ import cv2 as cv
 import enum
 import pickle
 import scene_breaker
+import ui
 import footeye.visionlib.features as features
 import footeye.visionlib.frameutils as frameutils
 import footeye.utils.framedebug as framedebug
@@ -20,6 +21,7 @@ class RunAction(enum.Enum):
     PITCH_ORIENTATION = 7
     PROCESS_FRAME = 8
     SCENE_BREAK = 9
+    PLAY_SCENE = 10
 
     def __str__(self):
         return self.name.lower()
@@ -63,7 +65,7 @@ def play_transformed(project, trans_function):
     vid.release()
 
 
-def process_project(project, action, frame_idx):
+def process_project(project, action, frame_idx, args):
     vid = project.vidinfo
     if (vid.fieldColorExtents is None):
         vid.fieldColorExtents = features.find_field_color_extents(vid)
@@ -101,6 +103,8 @@ def process_project(project, action, frame_idx):
     elif (action == RunAction.SCENE_BREAK):
         project.scenes = scene_breaker.break_scenes(project)
         project.save()
+    elif (action == RunAction.PLAY_SCENE):
+        ui.play_scene(project, project.scenes[int(args[0])])
     else:
         raise 'UnsupportedAction'
 
@@ -135,6 +139,7 @@ def run_app():
                            help='the index of a frame to operate on',
                            type=int,
                            default=1)
+    argparser.add_argument('rest', nargs=argparse.REMAINDER)
     args = argparser.parse_args()
 
     if args.p:
@@ -142,7 +147,7 @@ def run_app():
     else:
         project = create_project_from_video(args.v)
 
-    process_project(project, args.a, args.f)
+    process_project(project, args.a, args.f, args.rest)
 
 
 run_app()
