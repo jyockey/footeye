@@ -1,4 +1,4 @@
-from footeye.app.model import VidInfo, Project, FrameInfo
+from footeye.app.model import VidInfo, Project, FrameInfo, MatchData
 
 import argparse
 import cv2 as cv
@@ -69,9 +69,12 @@ def process_project(project, action, frame_idx, args):
     vid = project.vidinfo
     if (vid.fieldColorExtents is None):
         vid.fieldColorExtents = features.find_field_color_extents(vid)
-    project.save()
+        project.save()
 
-    print(vid.fieldColorExtents)
+    if (project.match_data is None):
+        project.match_data = MatchData(
+                input('Home Team? '), input('Away Team? '))
+        project.save()
 
     frame = frameutils.extract_frame(vid.vidFilePath, frame_idx)
 
