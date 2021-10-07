@@ -1,6 +1,7 @@
 from sklearn.cluster import MeanShift, estimate_bandwidth
 
 import cv2 as cv
+import math
 import numpy as np
 import footeye.visionlib.frameutils as frameutils
 import footeye.utils.framedebug as framedebug
@@ -12,6 +13,26 @@ FRAME_GREEN_RATIO_CUTOFF = 0.45
 COL_RED = (0, 0, 255)
 COL_WHITE = (255, 255, 255)
 COL_YELLOW = (0, 255, 255)
+
+
+class Feature:
+    contour = None
+    rect = None
+    contour_area = 0
+
+    def __init__(self, contour):
+        self.contour = contour
+        self.contour_area = cv.contourArea(contour)
+        self.rect = cv.boundingRect(contour)
+
+    def width(self):
+        return self.rect[2]
+
+    def height(self):
+        return self.rect[3]
+
+    def rect_area(self):
+        return self.width() * self.height()
 
 
 def mask_white(frame):
@@ -83,14 +104,15 @@ def field_not_pitch_mask(frame, pitchMask, vidinfo):
     framedebug.log_frame(onFieldMask, "On Field")
     field = cv.bitwise_and(frame, frame, mask=onFieldMask)
     framedebug.log_frame(field, "Field")
-    #equalized = frameutils.clahe_frame(field)
-    #framedebug.log_frame(equalized, "Equalized")
+    equalized = frameutils.clahe_frame(field)
+    framedebug.log_frame(equalized, "Equalized")
     equalized = field
     mask = frameutils.mask_color_range(equalized, vidinfo.fieldColorExtents[0], vidinfo.fieldColorExtents[1])
     framedebug.log_frame(mask, "Green Mask")
     kernel = np.ones((3, 3), np.uint8)
-    mask = cv.morphologyEx(mask, cv.MORPH_OPEN, kernel, iterations=3)
-    framedebug.log_frame(mask, "Morphed 1")
+    mask = cv.morphologyEx(mask, cv.MORPH_OPEN, kernel, iterations=2)
+    mask = cv.morphologyEx(mask, cv.MORPH_CLOSE, kernel, iterations=2)
+    framedebug.log_frame(mask, "Morphed")
     notPitchMask = cv.bitwise_and(
         onFieldMask, onFieldMask, mask=cv.bitwise_not(mask))
     framedebug.log_frame(notPitchMask, "Not pitch mask")
@@ -106,7 +128,12 @@ def _is_similar_rect(rect, reference_rect):
     return (0.5 < wratio < 2.0) and (0.5 < hratio < 2.0)
 
 
-def extract_feature_rects(frame, vidinfo):
+def _is_similar_area(area1, area2):
+    ratio = area1 / area2
+    return 0.3 < ratio < 3.0
+
+
+def extract_pitch_features(frame, vidinfo):
     pitchMask = pitch_mask(
       frame, vidinfo.fieldColorExtents[0], vidinfo.fieldColorExtents[1])
     if pitchMask is None:
@@ -119,34 +146,44 @@ def extract_feature_rects(frame, vidinfo):
     if (framedebug.is_enabled()):
         drawn = cv.drawContours(frame, contours, -1, COL_RED, 3)
         framedebug.log_frame(drawn, "allContours")
-    rects = list(map(lambda c: list(cv.boundingRect(c)), contours))
-    return list(filter(lambda r: r[2] > 10 and r[3] > 10, rects))
+    return list(filter(lambda f: f.contour_area > 20, map(Feature, contours)))
 
 
-def estimate_player_size(rects):
-    return np.median(rects, axis=0)
-
-
-def extract_players_from_rects(frame, rects, player_size):
-    playerRects = filter(lambda c: _is_similar_rect(c, player_size), rects)
+def draw_player_feature_rects(frame, features, player_features, median_area):
     rectFrame = frame.copy()
     if (framedebug.is_enabled()):
-        frameutils.draw_rect(rectFrame, player_size.astype(int), COL_WHITE, 3)
-        for rect in rects:
-            frameutils.draw_rect(rectFrame, rect, COL_RED, 3)
+        sqrt = int(math.sqrt(median_area))
+        frameutils.draw_rect(rectFrame, (0, 0, sqrt, sqrt), COL_WHITE, 3)
+        for feature in features:
+            frameutils.draw_rect(rectFrame, feature.rect, COL_RED, 3)
         framedebug.log_frame(rectFrame, "boundingRects")
-    for rect in playerRects:
-        frameutils.draw_rect(frame, rect, COL_YELLOW, 3)
+    for feature in player_features:
+        frameutils.draw_rect(frame, feature.rect, COL_YELLOW, 3)
     framedebug.log_frame(frame, "playerRects")
     return frame
 
 
+def _is_likely_player_feature(feature):
+    return (feature.contour_area > 20
+            and feature.width() > 10 and feature.height() > 10
+            and (feature.contour_area / feature.rect_area()) > 0.5)
+
+
 def extract_players(frame, vidinfo):
-    rects = extract_feature_rects(frame, vidinfo)
-    if not rects:
+    features = extract_pitch_features(frame, vidinfo)
+    # filter out tiny or very thin features or features that do not fill a
+    # majority of their bounding rect
+    player_features = list(filter(_is_likely_player_feature, features))
+    if not player_features:
         return frame
-    player_size = estimate_player_size(rects)
-    return extract_players_from_rects(frame, rects, player_size)
+    median_area = np.median(
+            list(map(lambda f: f.contour_area, player_features)))
+    #print(median_area)
+    player_features = list(filter(
+            lambda f: _is_similar_area(median_area, f.contour_area),
+            player_features))
+    return draw_player_feature_rects(
+            frame, features, player_features, median_area)
 
 
 def pitch_orientation(frame, vidinfo):
