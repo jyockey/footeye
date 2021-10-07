@@ -51,20 +51,6 @@ def create_project_from_video(videoFile):
     return project
 
 
-def play_transformed(project, trans_function):
-    vid = cv.VideoCapture(project.vidinfo.vidFilePath)
-    while vid.isOpened():
-        ret, frame = vid.read()
-        # if frame is read correctly ret is True
-        if not ret:
-            print("Can't receive frame (stream end?). Exiting ...")
-            break
-        cv.imshow('frame', trans_function(frame))
-        if cv.waitKey(1) == ord('q'):
-            break
-    vid.release()
-
-
 def process_project(project, action, frame_idx, args):
     vid = project.vidinfo
     if (vid.fieldColorExtents is None):
@@ -98,16 +84,16 @@ def process_project(project, action, frame_idx, args):
         framedebug.show_frames()
         print(frame)
     elif (action == RunAction.PLAY_PLAYEREXTRACT):
-        play_transformed(project, lambda f: features.extract_players(f, vid))
+        ui.play(project, lambda f: features.extract_players(f, vid))
     elif (action == RunAction.PLAY_MASKTOFIELD):
-        play_transformed(project, lambda f: features.mask_to_field(f, vid))
+        ui.play(project, lambda f: features.mask_to_field(f, vid))
     elif (action == RunAction.PLAY_LINES):
-        play_transformed(project, lambda f: features.find_lines(f, vid))
+        ui.play(project, lambda f: features.find_lines(f, vid))
     elif (action == RunAction.SCENE_BREAK):
         project.scenes = scene_breaker.break_scenes(project)
         project.save()
     elif (action == RunAction.PLAY_SCENE):
-        ui.play_scene(project, project.scenes[int(args[0])])
+        ui.play(project, scene=project.scenes[int(args[0])])
     else:
         raise 'UnsupportedAction'
 
