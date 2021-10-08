@@ -34,6 +34,25 @@ class Feature:
     def rect_area(self):
         return self.width() * self.height()
 
+    def aspect_ratio(self):
+        return self.width() / self.height()
+
+    def density(self):
+        return self.contour_area / self.rect_area()
+
+    def draw(self, frame, color=COL_RED):
+        cv.drawContours(frame, [self.contour], -1, color, 2)
+        frameutils.draw_rect(frame, self.rect, color, 1)
+        text_x = self.rect[0] + self.width() + 10
+        text_y = self.rect[1] + 10
+        text = str(self.rect)
+        cv.putText(frame, text, (text_x, text_y),
+                   cv.FONT_HERSHEY_SIMPLEX, 0.3, color, 1)
+        text = ('%s / %.3g / %.3g' %
+                (self.rect_area(), self.aspect_ratio(), self.density()))
+        cv.putText(frame, text, (text_x, text_y + 20),
+                   cv.FONT_HERSHEY_SIMPLEX, 0.3, color, 1)
+
 
 def mask_white(frame):
     grayImage = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
@@ -106,12 +125,12 @@ def field_not_pitch_mask(frame, pitchMask, vidinfo):
     framedebug.log_frame(field, "Field")
     equalized = frameutils.clahe_frame(field)
     framedebug.log_frame(equalized, "Equalized")
-    equalized = field
+    # equalized = field
     mask = frameutils.mask_color_range(equalized, vidinfo.fieldColorExtents[0], vidinfo.fieldColorExtents[1])
     framedebug.log_frame(mask, "Green Mask")
     kernel = np.ones((3, 3), np.uint8)
-    mask = cv.morphologyEx(mask, cv.MORPH_OPEN, kernel, iterations=2)
-    mask = cv.morphologyEx(mask, cv.MORPH_CLOSE, kernel, iterations=2)
+    mask = cv.morphologyEx(mask, cv.MORPH_OPEN, kernel, iterations=3)
+    mask = cv.morphologyEx(mask, cv.MORPH_CLOSE, kernel, iterations=1)
     framedebug.log_frame(mask, "Morphed")
     notPitchMask = cv.bitwise_and(
         onFieldMask, onFieldMask, mask=cv.bitwise_not(mask))
@@ -143,10 +162,12 @@ def extract_pitch_features(frame, vidinfo):
     fieldNotPitch = field_not_pitch_mask(frame, pitchMask, vidinfo)
     contours, hierarchy = cv.findContours(
         fieldNotPitch, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+    features = list(map(Feature, contours))
     if (framedebug.is_enabled()):
-        drawn = cv.drawContours(frame, contours, -1, COL_RED, 3)
-        framedebug.log_frame(drawn, "allContours")
-    return list(filter(lambda f: f.contour_area > 20, map(Feature, contours)))
+        for feature in features:
+            feature.draw(frame)
+        framedebug.log_frame(frame, "allContours")
+    return features
 
 
 def draw_player_feature_rects(frame, features, player_features, median_area):
@@ -164,26 +185,31 @@ def draw_player_feature_rects(frame, features, player_features, median_area):
 
 
 def _is_likely_player_feature(feature):
+    aspect = feature.aspect_ratio()
     return (feature.contour_area > 20
             and feature.width() > 10 and feature.height() > 10
-            and (feature.contour_area / feature.rect_area()) > 0.5)
+            and aspect > 0.25 and aspect < 4
+            and feature.density() > 0.3)
 
 
 def extract_players(frame, vidinfo):
+    rectFrame = frame.copy()
     features = extract_pitch_features(frame, vidinfo)
     # filter out tiny or very thin features or features that do not fill a
     # majority of their bounding rect
-    player_features = list(filter(_is_likely_player_feature, features))
-    if not player_features:
+    features = list(filter(_is_likely_player_feature, features))
+    if not features:
         return frame
     median_area = np.median(
-            list(map(lambda f: f.contour_area, player_features)))
-    #print(median_area)
-    player_features = list(filter(
+            list(map(lambda f: f.contour_area, features)))
+    # print("M: %s" % median_area)
+    features = list(filter(
             lambda f: _is_similar_area(median_area, f.contour_area),
-            player_features))
-    return draw_player_feature_rects(
-            frame, features, player_features, median_area)
+            features))
+    for feature in features:
+        feature.draw(rectFrame, COL_WHITE)
+    framedebug.log_frame(rectFrame, "playerRects")
+    return rectFrame
 
 
 def pitch_orientation(frame, vidinfo):

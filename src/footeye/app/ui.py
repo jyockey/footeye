@@ -10,8 +10,8 @@ def play(project, trans_function=None, scene=None, loop=True, frame_idx=True):
     while True:
         idx = 0
         vid.set(cv.CAP_PROP_POS_FRAMES, frame_start)
-        print(frame_start)
-        print(frame_count)
+        # print(frame_start)
+        # print(frame_count)
         while (idx < frame_count):
             ret, frame = vid.read()
             # if frame is read correctly ret is True
