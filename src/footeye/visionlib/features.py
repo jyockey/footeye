@@ -10,7 +10,7 @@ SCENE_DIFF_THRESHOLD = 80
 
 FRAME_GREEN_RATIO_CUTOFF = 0.45
 
-COL_RED = (0, 0, 255)
+COL_RED = (100, 100, 255)
 COL_WHITE = (255, 255, 255)
 COL_YELLOW = (0, 255, 255)
 
@@ -40,6 +40,15 @@ class Feature:
     def density(self):
         return self.contour_area / self.rect_area()
 
+    def perspective_scale(self, frame_height):
+        base_y = self.rect[1] + self.rect[3]
+        factor = (base_y / frame_height) * 2
+        factor = max(factor, 0.5)
+        return 1 / (factor * factor)
+
+    def scaled_contour_area(self, frame_height):
+        return self.perspective_scale(frame_height) * self.contour_area
+
     def draw(self, frame, color=COL_RED):
         cv.drawContours(frame, [self.contour], -1, color, 2)
         frameutils.draw_rect(frame, self.rect, color, 1)
@@ -48,8 +57,11 @@ class Feature:
         text = str(self.rect)
         cv.putText(frame, text, (text_x, text_y),
                    cv.FONT_HERSHEY_SIMPLEX, 0.3, color, 1)
-        text = ('%s / %.3g / %.3g' %
-                (self.rect_area(), self.aspect_ratio(), self.density()))
+        text = ('%s / %.3g / %.3g / %.3g' %
+                (self.rect_area(),
+                 self.aspect_ratio(),
+                 self.density(),
+                 self.scaled_contour_area(frame.shape[0])))
         cv.putText(frame, text, (text_x, text_y + 20),
                    cv.FONT_HERSHEY_SIMPLEX, 0.3, color, 1)
 
@@ -204,7 +216,7 @@ def extract_players(frame, vidinfo):
             list(map(lambda f: f.contour_area, features)))
     # print("M: %s" % median_area)
     features = list(filter(
-            lambda f: _is_similar_area(median_area, f.contour_area),
+            lambda f: _is_similar_area(median_area, f.scaled_contour_area(frame.shape[0])),
             features))
     for feature in features:
         feature.draw(rectFrame, COL_WHITE)
