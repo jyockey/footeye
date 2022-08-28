@@ -56,11 +56,6 @@ def process_project(project, action, frame_idx, args):
         vid.fieldColorExtents = features.find_field_color_extents(vid)
         project.save()
 
-    if (project.match_data is None):
-        project.match_data = MatchData(
-                input('Home Team? '), input('Away Team? '))
-        project.save()
-
     frame = frameutils.extract_frame(vid.vidFilePath, frame_idx)
 
     if (action == RunAction.COLORPICK):

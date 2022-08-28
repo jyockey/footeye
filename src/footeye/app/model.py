@@ -22,17 +22,6 @@ class VidInfo:
         self.frameCount = frameCount
 
 
-class MatchData:
-    home_team = None
-    away_team = None
-    home_roster = []
-    away_roster = []
-
-    def __init__(self, home_team, away_team):
-        self.home_team = home_team
-        self.away_team = away_team
-
-
 class Project:
     project_name = None
     vidinfo = None
